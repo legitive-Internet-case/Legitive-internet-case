@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>DuckVPN — Быстрый и безопасный VPN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #000000;
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.06);
+            --accent: #fbbf24;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #6b7280;
+            --green: linear-gradient(135deg, #10b981, #059669);
+            --gradient: linear-gradient(135deg, #fbbf24, #fb923c, #f59e0b);
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            --radius: 24px;
+            --radius-sm: 10px;
+            --radius-xl: 32px;
+            --radius-full: 9999px;
+            --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== ТАБ-БАР ===== */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0 env(safe-area-inset-bottom, 8px);
+            z-index: 150;
+            height: 72px;
+            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            border-radius: 12px;
+            min-width: 48px;
+        }
+        .tab-item.hidden-tab { display: none; }
+        .tab-item .tab-icon {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .tab-item .tab-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 1.8;
+            transition: var(--transition);
+        }
+        .tab-item.active { color: var(--accent); }
+        .tab-item.active .tab-icon svg {
+            stroke: var(--accent);
+            fill: var(--accent);
+            fill-opacity: 0.15;
+        }
+        .tab-item .tab-badge {
+            position: absolute;
+            top: 0;
+            right: 4px;
+            background: #ff3b30;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(255, 59, 48, 0.4);
+            transition: var(--transition);
+        }
+
+        /* ===== СЕКЦИИ ===== */
+        .screen {
+            display: none;
+            padding-top: 20px;
+            animation: fadeUp 0.5s ease forwards;
+        }
+        .screen.active { display: block; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== КАРТОЧКИ ===== */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.15), transparent);
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(251, 191, 36, 0.15);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+            pointer-events: none;
+        }
+        .btn:hover::after { opacity: 1; }
+        .btn-primary {
+            background: var(--gradient);
+            color: #0a0e17;
+            box-shadow: 0 4px 20px rgba(251, 191, 36, 0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 35px rgba(251, 191, 36, 0.4);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            color: var(--text);
+        }
+        .btn-outline:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
+            transform: translateY(-2px);
+        }
+        .btn-disabled {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            width: auto;
+            display: inline-flex;
+        }
+        .btn-success {
+            background: #34c759;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(52, 199, 89, 0.25);
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(52, 199, 89, 0.35);
+        }
+        .btn-danger {
+            background: #ff3b30;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(255, 59, 48, 0.25);
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(255, 59, 48, 0.35);
+        }
+
+        /* ===== ЗАГОЛОВКИ ===== */
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 24px;
+        }
+
+        /* ===== ОСОБЕННОСТИ ===== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .feature-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 18px 16px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            transition: var(--transition);
+        }
+        .feature-item:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: rgba(251, 191, 36, 0.2);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+        .feature-item .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            background: rgba(251, 191, 36, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            border: 1px solid rgba(251, 191, 36, 0.12);
+            transition: var(--transition);
+        }
+        .feature-item:hover .icon { transform: scale(1.1); border-color: var(--accent); }
+        .feature-item .icon svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--accent);
+            stroke-width: 1.8;
+        }
+        .feature-item h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+        .feature-item p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; }
+
+        /* ===== ТАРИФЫ ===== */
+        .pricing-grid { display: flex; flex-direction: column; gap: 16px; }
+        .pricing-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            position: relative;
+            backdrop-filter: blur(8px);
+            transition: var(--transition);
+        }
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(251, 191, 36, 0.15);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        .pricing-card.featured {
+            border-color: rgba(251, 191, 36, 0.25);
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.05);
+        }
+        .pricing-card.featured:hover {
+            box-shadow: 0 0 50px rgba(251, 191, 36, 0.1), 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        .pricing-card .name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .pricing-card .price {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin: 4px 0 2px;
+            transition: var(--transition);
+        }
+        .pricing-card:hover .price { transform: scale(1.02); color: var(--accent); }
+        .pricing-card .price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+        .pricing-card .period {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .pricing-card .features {
+            list-style: none;
+            margin-bottom: 16px;
+        }
+        .pricing-card .features li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding: 4px 0;
+            transition: var(--transition);
+        }
+        .pricing-card .features li:hover { color: var(--text); }
+        .pricing-card .features li svg {
+            width: 18px;
+            height: 18px;
+            stroke: #34c759;
+            stroke-width: 2.5;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .pricing-card .features li.disabled {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+        .pricing-card .features li.disabled svg { stroke: var(--text-muted); }
+        .pricing-badge {
+            position: absolute;
+            top: 12px;
+            right: -18px;
+            background: var(--gradient);
+            color: #0a0e17;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 28px;
+            transform: rotate(45deg);
+            letter-spacing: 0.5px;
+            animation: shimmer 3s infinite linear;
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* ===== МАНУАЛ ===== */
+        .manual-step {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: var(--transition);
+        }
+        .manual-step:last-child { border-bottom: none; }
+        .manual-step:hover {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-sm);
+            padding-left: 8px;
+        }
+        .manual-step .num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: #0a0e17;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .manual-step:hover .num { transform: scale(1.1); }
+        .manual-step .text {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+        .manual-step .text strong { color: var(--text); }
+
+        /* ===== АККАУНТ ===== */
+        .account-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            margin: 0 auto 12px;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
+            position: relative;
+            transition: var(--transition);
+            border: 2px solid rgba(251, 191, 36, 0.2);
+        }
+        .account-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(251, 191, 36, 0.25);
+        }
+        .admin-badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: #ff3b30;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            border: 2px solid var(--bg);
+        }
+
+        .account-details {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 16px 0 20px;
+            flex-wrap: wrap;
+        }
+        .account-detail {
+            text-align: center;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            min-width: 70px;
+            flex: 1;
+            backdrop-filter: blur(4px);
+            word-break: break-word;
+            transition: var(--transition);
+        }
+        .account-detail:hover {
+            transform: translateY(-2px) scale(1.02);
+            border-color: rgba(251, 191, 36, 0.15);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .account-detail .label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+        .account-detail .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 2px;
+            background: var(--green);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: var(--transition);
+        }
+
+        /* ===== АДМИН-ПАНЕЛЬ ===== */
+        .admin-user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            flex-wrap: wrap;
+            gap: 8px;
+            transition: var(--transition);
+            border-radius: var(--radius-sm);
+        }
+        .admin-user-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+            padding-left: 8px;
+        }
+        .admin-user-item:last-child { border-bottom: none; }
+        .admin-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+        .admin-user-info .name { font-weight: 600; }
+        .admin-user-info .email { font-size: 0.8rem; color: var(--text-secondary); }
+        .admin-user-info .plan { font-size: 0.8rem; color: var(--text-muted); }
+        .admin-user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .admin-user-count {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        /* ===== МОДАЛЬНЫЕ ОКНА (ОБЩИЙ СТИЛЬ) ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: #111;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius-xl);
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            animation: fadeUp 0.4s ease;
+            position: relative;
+        }
+
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .modal h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .modal .subtitle {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* ===== ВКЛАДКИ В МОДАЛКЕ ===== */
+        .modal-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: var(--radius-full);
+            padding: 4px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .modal-tab {
+            flex: 1;
+            padding: 10px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .modal-tab.active {
+            background: var(--gradient);
+            color: #0a0e17;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.2);
+        }
+        .modal-tab:hover:not(.active) { color: var(--text); }
+
+        /* ===== ФОРМЫ В МОДАЛКЕ ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+        }
+        .form-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .form-error {
+            color: #ff3b30;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            display: none;
+        }
+        .form-group.error input { border-color: #ff3b30; }
+        .form-group.error .form-error { display: block; }
+        .form-success {
+            color: #34c759;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 8px;
+            background: rgba(52, 199, 89, 0.08);
+            border-radius: var(--radius-sm);
+            margin-bottom: 12px;
+            display: none;
+            border: 1px solid rgba(52, 199, 89, 0.1);
+        }
+        .form-success.show { display: block; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            z-index: 400;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: fadeUp 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+        .toast .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .toast.success .icon { background: rgba(52, 199, 89, 0.15); color: #34c759; }
+        .toast.error .icon { background: rgba(255, 59, 48, 0.15); color: #ff3b30; }
+        .toast.info .icon { background: rgba(0, 122, 255, 0.15); color: #007aff; }
+
+        /* ===== ФУТЕР ===== */
+        .footer-simple {
+            padding: 24px 0 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            margin-top: 30px;
+            text-align: center;
+        }
+        .footer-simple p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+        }
+        .footer-simple .privacy-link {
+            color: var(--accent);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        .footer-simple .privacy-link:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+
+        /* ===== МОДАЛКА КОНФИДЕНЦИАЛЬНОСТИ (наследует .modal) ===== */
+        #privacyModal .modal {
+            max-width: 420px;
+            padding: 32px 28px;
+        }
+        #privacyModal .modal h2 {
+            text-align: left;
+            font-size: 1.3rem;
+        }
+        #privacyModal .modal p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 0.95rem;
+            margin-top: 12px;
+            text-align: left;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 450px) {
+            .container { padding: 0 16px; }
+            .features-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .page-title { font-size: 1.6rem; }
+            .pricing-card .price { font-size: 2rem; }
+            .admin-user-item { flex-direction: column; align-items: stretch; }
+            .admin-user-actions { justify-content: flex-start; }
+            .account-detail { padding: 10px 10px; min-width: 60px; }
+            .account-detail .value { font-size: 1rem; }
+            #privacyModal .modal { padding: 24px 20px; }
+            .footer-simple p { font-size: 0.7rem; }
+        }
+        @media (max-width: 380px) {
+            .features-grid { grid-template-columns: 1fr; }
+            .account-details { gap: 10px; }
+            .account-detail { min-width: 50px; padding: 8px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== ТАБ-БАР ===== -->
+    <nav class="tab-bar" id="tabBar">
+        <button class="tab-item active" data-tab="home">
+            <span class="tab-icon"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg></span>
+            <span>Главная</span>
+        </button>
+        <button class="tab-item" data-tab="features">
+            <span class="tab-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span>
+            <span>Функции</span>
+        </button>
+        <button class="tab-item" data-tab="pricing">
+            <span class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span>
+            <span>Тарифы</span>
+        </button>
+        <button class="tab-item" data-tab="manual">
+            <span class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M8 4h8"/><path d="M12 4v16"/><path d="M4 10l4 4-4 4"/><path d="M20 10l-4 4 4 4"/></svg></span>
+            <span>Мануал</span>
+        </button>
+        <button class="tab-item" data-tab="account">
+            <span class="tab-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <span>Аккаунт</span>
+            <span class="tab-badge" id="accBadge" style="display:none;">1</span>
+        </button>
+    </nav>
+
+    <!-- ===== СЕКЦИИ ===== -->
+    <section class="screen active" id="screen-home">
+        <div class="container">
+            <div class="card" style="margin-top:10px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <svg width="48" height="48" viewBox="0 0 100 100" fill="none">
+                        <defs>
+                            <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#fbbf24"/>
+                                <stop offset="50%" stop-color="#fb923c"/>
+                                <stop offset="100%" stop-color="#f59e0b"/>
+                            </linearGradient>
+                            <linearGradient id="bd" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#fcd34d"/>
+                                <stop offset="100%" stop-color="#f59e0b"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="50" cy="50" r="46" fill="url(#lg)" opacity="0.9"/>
+                        <circle cx="50" cy="50" r="46" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                        <ellipse cx="50" cy="60" rx="30" ry="24" fill="url(#bd)"/>
+                        <circle cx="35" cy="40" r="20" fill="url(#bd)"/>
+                        <circle cx="30" cy="36" r="4.5" fill="#1e293b"/>
+                        <circle cx="28.5" cy="34.5" r="1.5" fill="white"/>
+                        <path d="M16 42 L8 48 L16 50 Z" fill="#f97316" stroke="#ea580c" stroke-width="1"/>
+                        <path d="M55 55 Q65 48 72 52 Q68 60 60 62 Q52 63 55 55Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/>
+                        <path d="M78 52 Q85 45 82 38 Q76 42 74 50Z" fill="#f59e0b"/>
+                        <path d="M20 76 Q35 72 50 76 Q65 80 80 76" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                        <h1 style="font-size:1.8rem; font-weight:800; letter-spacing:-0.5px;">DuckVPN</h1>
+                        <p style="color:var(--text-secondary); font-size:0.9rem;">Приватность как у утки в воде. </p>
+                    </div>
+                </div>
+                <p style="color:var(--text-secondary); font-size:0.95rem; line-height:1.5; margin-bottom:16px;">
+                    Анонимность, нулевые логи и молниеносная скорость на всех устройствах.
+                </p>
+                <button class="btn" id="connectBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    Подключиться
+                </button>
+                <button class="btn btn-primary" id="supportBtn" style="margin-top:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Поддержка
+                </button>
+                <button class="btn btn-primary" id="newsBtn" style="margin-top:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 8h8"/><path d="M8 12h6"/><path d="M8 16h4"/></svg>
+                    Новости
+                </button>
+                <div style="display:flex; justify-content:space-around; margin-top:16px; border-top:1px solid rgba(255,255,255,0.04); padding-top:16px;">
+                    <div><span style="font-weight:800; color:var(--accent);">500+</span><br><span style="font-size:0.7rem; color:var(--text-muted);">Пользователей</span></div>
+                    <div><span style="font-weight:800; color:var(--accent);">100+</span><br><span style="font-size:0.7rem; color:var(--text-muted);">Стран</span></div>
+                    <div><span style="font-weight:800; color:var(--accent);">99.9%</span><br><span style="font-size:0.7rem; color:var(--text-muted);">Аптайм</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="screen" id="screen-features">
+        <div class="container">
+            <div style="padding-top:10px;">
+                <h2 class="page-title">Функции</h2>
+                <p class="page-subtitle">Всё, что нужно для полной приватности</p>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                        <h3>Нулевые логи</h3>
+                        <p>Не храним историю, IP или личные данные.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+                        <h3>30+ локаций</h3>
+                        <p>Серверы в 30+ странах, переключение за секунду.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                        <h3>Скорость</h3>
+                        <p>WireGuard до 10 Гбит/с без ограничений.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+                        <h3>Шифрование</h3>
+                        <p>AES‑256 военного уровня для ваших данных.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="screen" id="screen-pricing">
+        <div class="container">
+            <div style="padding-top:10px;">
+                <h2 class="page-title">Тарифы</h2>
+                <p class="page-subtitle">Выберите оптимальный тариф</p>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <div class="name">Basic</div>
+                        <div class="price">0.5$<span>/мес</span></div>
+                        <div class="period">При оплате за месяц</div>
+                        <ul class="features">
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Безлимитный трафик</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> 1 устройство</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> 10+ локаций</li>
+                            <li class="disabled"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Приоритетная поддержка</li>
+                        </ul>
+                        <button class="btn btn-outline" onclick="window.open('http://t.me/send?start=IVMDW7F7e3cS', '_blank')">Выбрать</button>
+                    </div>
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">Популярный</div>
+                        <div class="name">Pro</div>
+                        <div class="price">1$<span>/мес</span></div>
+                        <div class="period">При оплате за месяц</div>
+                        <ul class="features">
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Безлимитный трафик</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> 5 устройств</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> 100+ локаций</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Приоритетная поддержка</li>
+                        </ul>
+                        <button class="btn btn-primary" onclick="window.open('http://t.me/send?start=IVA4sjPh7yWn', '_blank')">Выбрать Pro</button>
+                    </div>
+                    <div class="pricing-card">
+                        <div class="name">Premium</div>
+                        <div class="price">3$<span>/мес</span></div>
+                        <div class="period">При оплате за месяц</div>
+                        <ul class="features">
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Безлимитный трафик</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> ∞ устройств</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> 100+ локаций</li>
+                            <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Персональный менеджер</li>
+                        </ul>
+                        <button class="btn btn-outline" onclick="window.open('http://t.me/send?start=IVYLCxa9NI66', '_blank')">Выбрать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="screen" id="screen-manual">
+        <div class="container">
+            <div style="padding-top:10px;">
+                <h2 class="page-title">Мануал по установке</h2>
+                <p class="page-subtitle">Как установить приложение <strong>happ</strong> и настроить VPN</p>
+                <div class="card">
+                    <div class="manual-step"><div class="num">1</div><div class="text"><strong>Скачайте happ</strong> из официального магазина приложений (App Store или Google Play).</div></div>
+                    <div class="manual-step"><div class="num">2</div><div class="text"><strong>Установите</strong> приложение и откройте его. Разрешите необходимые доступы (VPN, уведомления).</div></div>
+                    <div class="manual-step"><div class="num">3</div><div class="text"><strong>Введите ваши данные</strong> для входа или зарегистрируйтесь, если у вас ещё нет аккаунта.</div></div>
+                    <div class="manual-step"><div class="num">4</div><div class="text"><strong>Нажмите «Подключиться»</strong> в главном меню приложения, чтобы активировать защищённое соединение.</div></div>
+                    <div class="manual-step"><div class="num">5</div><div class="text"><strong>Готово!</strong> Вы теперь в безопасности. Статус VPN отобразится в строке состояния.</div></div>
+                </div>
+                <button class="btn btn-primary" id="connectBtnManual" style="margin-top:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    Подключиться
+                </button>
+                <div style="text-align:center; margin-top:12px;">
+                    <p style="color:var(--text-muted); font-size:0.85rem;">Если возникли вопросы, обратитесь в <a href="#" style="color:var(--accent); text-decoration:none;">поддержку</a>.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="screen" id="screen-admin">
+        <div class="container">
+            <div style="padding-top:10px;">
+                <h2 class="page-title">Админ-панель</h2>
+                <p class="page-subtitle">Управление подписками пользователей</p>
+                <div class="card">
+                    <input type="text" class="search-input" id="adminSearch" placeholder="🔍 Поиск по имени или email..." oninput="renderUsers()" />
+                    <div class="admin-user-count" id="userCount">Пользователей: 0</div>
+                    <div id="adminUserList"></div>
+                    <button class="btn btn-outline" style="margin-top:16px;" onclick="switchTab('account')">← Вернуться в аккаунт</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="screen" id="screen-account">
+        <div class="container">
+            <div style="padding-top:10px;">
+                <div class="card" style="text-align:center;">
+                    <div class="account-avatar" id="accAvatar">
+                        🦆
+                        <span class="admin-badge" id="adminBadge" style="display:none;">ADMIN</span>
+                    </div>
+                    <h2 id="accName" style="font-size:1.4rem; font-weight:700;">Пользователь</h2>
+                    <p id="accEmail" style="color:var(--text-secondary); font-size:0.9rem;">user@duckvpn.com</p>
+                    <div class="account-details">
+                        <div class="account-detail">
+                            <div class="label">План</div>
+                            <div class="value" id="accPlan">—</div>
+                        </div>
+                        <div class="account-detail">
+                            <div class="label">Статус</div>
+                            <div class="value" id="accStatus">FALSE</div>
+                        </div>
+                        <div class="account-detail">
+                            <div class="label">Срок</div>
+                            <div class="value" id="accExpiry">—</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline" id="adminPanelBtn" style="display:none; margin-bottom:10px;" onclick="switchTab('admin')">🛡 Админ панель</button>
+                    <button class="btn btn-outline" onclick="logout()" style="width:100%;">Выйти из аккаунта</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ФУТЕР ===== -->
+    <footer class="footer-simple">
+        <div class="container">
+            <p>
+                © 2026 Все права защищены
+                <span style="margin:0 6px; color:var(--text-muted);">•</span>
+                <span class="privacy-link" onclick="openPrivacy()">Конфиденциальность</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- ===== МОДАЛКА КОНФИДЕНЦИАЛЬНОСТИ ===== -->
+    <div class="modal-overlay" id="privacyModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePrivacy()">✕</button>
+            <h2>🔒 Конфиденциальность</h2>
+            <p>
+                DuckVPN не собирает, не хранит и не передаёт третьим лицам ваши личные данные.
+                Мы не ведём логи активности, не записываем IP-адреса, историю посещений или содержание трафика.
+                Вся передаваемая информация шифруется по стандарту AES-256.
+                Для оплаты используются проверенные платёжные системы, которые также соблюдают строгие меры защиты.
+                Ваша анонимность — наш главный приоритет.
+            </p>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛКА АВТОРИЗАЦИИ ===== -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <h2 id="modalTitle">С возвращением!</h2>
+            <p class="subtitle" id="modalSubtitle">Войдите, чтобы продолжить</p>
+            <div class="modal-tabs">
+                <button class="modal-tab active" id="tabLogin" onclick="switchModalTab('login')">Вход</button>
+                <button class="modal-tab" id="tabRegister" onclick="switchModalTab('register')">Регистрация</button>
+            </div>
+            <div class="form-success" id="formSuccess"></div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email / Логин</label>
+                    <input type="text" id="loginEmail" placeholder="you@example.com" required />
+                    <div class="form-error">Введите корректный email или логин</div>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required minlength="6" />
+                    <div class="form-error">Минимум 6 символов</div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Войти</button>
+            </form>
+            <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
+                <div class="form-group">
+                    <label>Имя</label>
+                    <input type="text" id="regName" placeholder="Ваше имя" required minlength="2" />
+                    <div class="form-error">Минимум 2 символа</div>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" placeholder="you@example.com" required />
+                    <div class="form-error">Введите корректный email</div>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="regPassword" placeholder="••••••••" required minlength="6" />
+                    <div class="form-error">Минимум 6 символов</div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Создать аккаунт</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <script>
+        // ===== КОНФИДЕНЦИАЛЬНОСТЬ =====
+        function openPrivacy() {
+            document.getElementById('privacyModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closePrivacy() {
+            document.getElementById('privacyModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('privacyModal').addEventListener('click', function(e) {
+            if (e.target === this) closePrivacy();
+        });
+
+        // ===== ОСНОВНОЙ JS =====
+        const CONNECTION_URL = 'https://example.com/connect';
+        const SUPPORT_URL = 'https://t.me/overably';
+        const NEWS_URL = 'https://example.com/news';
+
+        const SUPER_ADMIN_EMAIL = 'DESPITEADMIN98';
+        const SUPER_ADMIN_PASSWORD = 'mjilir4I78vaiBNKRJbguvk9nXoG2OXUdPuOM01';
+
+        let appState = {
+            user: null,
+            plan: null,
+            currentTab: 'home',
+        };
+        const publicTabs = ['home', 'account'];
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('duckvpn_state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.user) appState.user = parsed.user;
+                    if (parsed.plan) appState.plan = parsed.plan;
+                }
+            } catch (e) {}
+            updateUI();
+            renderUsers();
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('duckvpn_state', JSON.stringify({
+                    user: appState.user,
+                    plan: appState.plan,
+                }));
+            } catch (e) {}
+        }
+
+        function updateUI() {
+            const badge = document.getElementById('accBadge');
+            if (appState.user) {
+                badge.style.display = 'flex';
+                badge.textContent = '✓';
+                badge.style.background = '#34c759';
+            } else {
+                badge.style.display = 'none';
+            }
+            updateAccount();
+            updateTabs();
+            updateConnectBtn();
+        }
+
+        function updateAccount() {
+            const adminBtn = document.getElementById('adminPanelBtn');
+            const avatar = document.getElementById('accAvatar');
+            if (appState.user) {
+                document.getElementById('accName').textContent = appState.user.name;
+                document.getElementById('accEmail').textContent = appState.user.email;
+                const isAdmin = appState.user.email === SUPER_ADMIN_EMAIL;
+                avatar.innerHTML = `
+                    ${appState.user.name.charAt(0).toUpperCase()}
+                    ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}
+                `;
+                document.getElementById('accPlan').textContent = appState.plan ? appState.plan + ' план' : 'Бесплатный';
+                document.getElementById('accStatus').textContent = appState.plan ? 'TRUE' : 'FALSE';
+                document.getElementById('accExpiry').textContent = appState.plan ? '30 дней' : '—';
+                adminBtn.style.display = isAdmin ? 'block' : 'none';
+            } else {
+                document.getElementById('accName').textContent = 'Пользователь';
+                document.getElementById('accEmail').textContent = 'user@duckvpn.com';
+                avatar.innerHTML = '🦆';
+                document.getElementById('accPlan').textContent = '—';
+                document.getElementById('accStatus').textContent = 'FALSE';
+                document.getElementById('accExpiry').textContent = '—';
+                adminBtn.style.display = 'none';
+            }
+        }
+
+        function updateTabs() {
+            const isAuth = !!appState.user;
+            document.querySelectorAll('.tab-item').forEach(btn => {
+                const tab = btn.dataset.tab;
+                let visible = isAuth || publicTabs.includes(tab);
+                btn.classList.toggle('hidden-tab', !visible);
+            });
+            if (!isAuth && !publicTabs.includes(appState.currentTab)) {
+                switchTab('home');
+            }
+        }
+
+        function updateConnectBtn() {
+            const btns = document.querySelectorAll('#connectBtn, #connectBtnManual');
+            const can = canConnect();
+            btns.forEach(btn => {
+                if (can) {
+                    btn.className = 'btn btn-primary';
+                    btn.disabled = false;
+                } else {
+                    btn.className = 'btn btn-disabled';
+                    btn.disabled = true;
+                }
+            });
+        }
+
+        function canConnect() {
+            if (!appState.user) return false;
+            if (appState.user.email === SUPER_ADMIN_EMAIL) return true;
+            return appState.plan === 'Pro' || appState.plan === 'Premium';
+        }
+
+        function switchTab(tab) {
+            if (!appState.user && !publicTabs.includes(tab)) {
+                showToast('info', 'Войдите, чтобы просмотреть этот раздел');
+                return;
+            }
+            if (tab === 'account' && !appState.user) {
+                openModal('login');
+                return;
+            }
+            if (tab === 'admin' && (!appState.user || appState.user.email !== SUPER_ADMIN_EMAIL)) {
+                showToast('error', 'Доступ запрещён');
+                return;
+            }
+
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById('screen-' + tab);
+            if (target) {
+                target.classList.add('active');
+                target.style.animation = 'none';
+                requestAnimationFrame(() => { target.style.animation = ''; });
+            }
+
+            if (tab !== 'admin') {
+                document.querySelectorAll('.tab-item').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tab);
+                });
+            }
+
+            appState.currentTab = tab;
+            if (tab === 'account') updateAccount();
+            if (tab === 'admin') renderUsers();
+        }
+
+        document.querySelectorAll('.tab-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                switchTab(this.dataset.tab);
+            });
+        });
+
+        function openModal(tab) {
+            document.getElementById('authModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            switchModalTab(tab);
+            document.getElementById('formSuccess').classList.remove('show');
+            clearErrors();
+        }
+
+        function closeModal() {
+            document.getElementById('authModal').classList.remove('active');
+            document.body.style.overflow = '';
+            clearErrors();
+            document.getElementById('formSuccess').classList.remove('show');
+        }
+
+        function switchModalTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const title = document.getElementById('modalTitle');
+            const subtitle = document.getElementById('modalSubtitle');
+
+            if (tab === 'login') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                title.textContent = 'С возвращением!';
+                subtitle.textContent = 'Войдите, чтобы продолжить';
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                tabRegister.classList.add('active');
+                tabLogin.classList.remove('active');
+                title.textContent = 'Создать аккаунт';
+                subtitle.textContent = 'Присоединяйтесь к DuckVPN';
+            }
+            clearErrors();
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.form-group').forEach(g => g.classList.remove('error'));
+        }
+
+        function showFormError(inputId, msg) {
+            const input = document.getElementById(inputId);
+            const group = input.closest('.form-group');
+            group.classList.add('error');
+            group.querySelector('.form-error').textContent = msg;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            clearErrors();
+            const login = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!login) {
+                showFormError('loginEmail', 'Введите логин или email');
+                return;
+            }
+            if (!password || password.length < 6) {
+                showFormError('loginPassword', 'Минимум 6 символов');
+                return;
+            }
+
+            if (login === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD) {
+                appState.user = {
+                    name: 'DESPITEADMIN',
+                    email: SUPER_ADMIN_EMAIL,
+                    isAdmin: true,
+                    isSuperAdmin: true
+                };
+                appState.plan = null;
+                saveState();
+                updateUI();
+                closeModal();
+                showToast('success', 'Вход выполнен как администратор');
+                switchTab('account');
+                return;
+            }
+
+            let users = {};
+            try { users = JSON.parse(localStorage.getItem('duckvpn_users')) || {}; } catch (e) {}
+
+            const entry = users[login];
+            if (!entry) {
+                showFormError('loginEmail', 'Пользователь не найден');
+                showToast('error', 'Аккаунт не найден. Зарегистрируйтесь!');
+                return;
+            }
+            if (entry.password !== password) {
+                showFormError('loginPassword', 'Неверный пароль');
+                return;
+            }
+
+            appState.user = { name: entry.name, email: login, isAdmin: false };
+            appState.plan = entry.plan || null;
+            saveState();
+            updateUI();
+            closeModal();
+            showToast('success', 'Добро пожаловать, ' + appState.user.name + '!');
+            if (appState.currentTab === 'account') switchTab('account');
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            clearErrors();
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            if (!name || name.length < 2) {
+                showFormError('regName', 'Минимум 2 символа');
+                return;
+            }
+            if (!email || !email.includes('@')) {
+                showFormError('regEmail', 'Введите корректный email');
+                return;
+            }
+            if (!password || password.length < 6) {
+                showFormError('regPassword', 'Минимум 6 символов');
+                return;
+            }
+
+            let users = {};
+            try { users = JSON.parse(localStorage.getItem('duckvpn_users')) || {}; } catch (e) {}
+
+            if (users[email]) {
+                showFormError('regEmail', 'Пользователь уже существует');
+                showToast('error', 'Аккаунт уже существует. Войдите!');
+                return;
+            }
+
+            users[email] = { name, password, plan: null, isAdmin: false };
+            localStorage.setItem('duckvpn_users', JSON.stringify(users));
+
+            appState.user = { name, email, isAdmin: false };
+            appState.plan = null;
+            saveState();
+            updateUI();
+
+            const successEl = document.getElementById('formSuccess');
+            successEl.textContent = '✅ Аккаунт создан! Перенаправление...';
+            successEl.classList.add('show');
+
+            setTimeout(() => {
+                closeModal();
+                showToast('success', 'Аккаунт успешно создан! Добро пожаловать, ' + name + '!');
+                if (appState.currentTab === 'account') switchTab('account');
+            }, 1200);
+        }
+
+        function logout() {
+            appState.user = null;
+            appState.plan = null;
+            saveState();
+            updateUI();
+            showToast('info', 'Вы вышли из аккаунта');
+            switchTab('home');
+        }
+
+        function getUsers() {
+            let users = {};
+            try { users = JSON.parse(localStorage.getItem('duckvpn_users')) || {}; } catch (e) {}
+            return users;
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('adminUserList');
+            const countEl = document.getElementById('userCount');
+            const query = document.getElementById('adminSearch').value.toLowerCase().trim();
+
+            let users = getUsers();
+            let entries = Object.entries(users);
+
+            if (query) {
+                entries = entries.filter(([email, data]) => {
+                    return email.toLowerCase().includes(query) || data.name.toLowerCase().includes(query);
+                });
+            }
+
+            countEl.textContent = 'Пользователей: ' + entries.length;
+
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px 0;">Пользователи не найдены</p>';
+                return;
+            }
+
+            let html = '';
+            entries.forEach(([email, data]) => {
+                const plan = data.plan || 'Бесплатный';
+                html += `
+                    <div class="admin-user-item">
+                        <div class="admin-user-info">
+                            <span class="name">${data.name} ${data.isAdmin ? '👑' : ''}</span>
+                            <span class="email">${email}</span>
+                            <span class="plan">План: ${plan}</span>
+                        </div>
+                        <div class="admin-user-actions">
+                            <button class="btn btn-sm btn-success" onclick="grantPlan('${email}', 'Pro')">Pro</button>
+                            <button class="btn btn-sm btn-success" onclick="grantPlan('${email}', 'Premium')">Premium</button>
+                            <button class="btn btn-sm btn-danger" onclick="grantPlan('${email}', null)">Сбросить</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function grantPlan(email, plan) {
+            let users = getUsers();
+            if (!users[email]) {
+                showToast('error', 'Пользователь не найден');
+                return;
+            }
+            users[email].plan = plan;
+            localStorage.setItem('duckvpn_users', JSON.stringify(users));
+
+            if (appState.user && appState.user.email === email) {
+                appState.plan = plan;
+                saveState();
+                updateUI();
+            }
+            renderUsers();
+            showToast('success', 'План для ' + users[email].name + ' обновлён на ' + (plan || 'Бесплатный'));
+        }
+
+        function openConnection() {
+            if (!canConnect()) {
+                showToast('error', 'Доступно только для администратора или обладателей PRO-подписки');
+                return;
+            }
+            window.open(CONNECTION_URL, '_blank');
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', openConnection);
+        document.getElementById('connectBtnManual').addEventListener('click', openConnection);
+
+        document.getElementById('supportBtn').addEventListener('click', function() {
+            window.open(SUPPORT_URL, '_blank');
+        });
+
+        document.getElementById('newsBtn').addEventListener('click', function() {
+            window.open(NEWS_URL, '_blank');
+        });
+
+        function showToast(type, msg) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            toast.innerHTML = `
+                <div class="icon">${icons[type] || 'ℹ'}</div>
+                <span>${msg}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.4s ease';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        document.getElementById('authModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('authModal')) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { closeModal(); closePrivacy(); }
+        });
+
+        loadState();
+        updateTabs();
+        if (!appState.user && !publicTabs.includes(appState.currentTab)) {
+            switchTab('home');
+        } else {
+            switchTab(appState.currentTab);
+        }
+
+        console.log('DuckVPN loaded.');
+    </script>
+</body>
+</html>
